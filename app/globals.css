@@ -41,7 +41,7 @@
   --card-foreground: oklch(0.19 0.025 255);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.19 0.025 255);
-  --primary: oklch(0.56 0.19 248);
+  --primary: oklch(0.62 0.17 160);
   --primary-foreground: oklch(0.99 0.004 255);
   --secondary: oklch(0.94 0.012 255);
   --secondary-foreground: oklch(0.25 0.025 255);
@@ -51,7 +51,7 @@
   --accent-foreground: oklch(0.19 0.025 255);
   --border: oklch(0.19 0.025 255 / 12%);
   --input: oklch(0.19 0.025 255 / 16%);
-  --ring: oklch(0.56 0.19 248);
+  --ring: oklch(0.62 0.17 160);
   --sidebar: oklch(0.95 0.01 255);
   --sidebar-foreground: oklch(0.24 0.025 255);
   --sidebar-accent: oklch(0.9 0.018 255);
@@ -61,13 +61,13 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.135 0.018 255);
-  --foreground: oklch(0.96 0.008 255);
-  --card: oklch(0.175 0.02 255);
+  --background: oklch(0.115 0.012 260);
+  --foreground: oklch(0.97 0.008 155);
+  --card: oklch(0.19 0.012 260 / 58%);
   --card-foreground: oklch(0.96 0.008 255);
   --popover: oklch(0.19 0.022 255);
   --popover-foreground: oklch(0.96 0.008 255);
-  --primary: oklch(0.67 0.19 248);
+  --primary: oklch(0.77 0.17 160);
   --primary-foreground: oklch(0.99 0.004 255);
   --secondary: oklch(0.22 0.022 255);
   --secondary-foreground: oklch(0.9 0.01 255);
@@ -77,7 +77,7 @@
   --accent-foreground: oklch(0.96 0.008 255);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.67 0.19 248);
+  --ring: oklch(0.77 0.17 160);
   --sidebar: oklch(0.155 0.019 255);
   --sidebar-foreground: oklch(0.92 0.01 255);
   --sidebar-accent: oklch(0.23 0.028 255);
@@ -90,4 +90,23 @@ html { background: var(--background); }
 body { @apply bg-background text-foreground antialiased; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
-::selection { background: oklch(0.67 0.19 248 / 30%); }
+::selection { background: oklch(0.72 0.17 160 / 30%); }
+
+.dark body {
+  background: radial-gradient(circle at 8% 8%, oklch(0.42 0.12 160 / 10%), transparent 30rem), radial-gradient(circle at 86% 14%, oklch(0.36 0.08 260 / 16%), transparent 32rem), oklch(0.115 0.012 260);
+}
+
+.glass-panel {
+  background: oklch(0.19 0.012 260 / 42%);
+  border-color: oklch(1 0 0 / 9%);
+  box-shadow: 0 18px 60px oklch(0 0 0 / 18%), inset 0 1px oklch(1 0 0 / 5%);
+  backdrop-filter: blur(18px);
+}
+
+.glass-sidebar { background: oklch(0.13 0.012 260 / 64%); backdrop-filter: blur(22px); }
+.scan-surface { position: relative; overflow: hidden; }
+.scan-surface::after { content: ''; position: absolute; inset: 0 auto 0 -35%; width: 28%; pointer-events: none; background: linear-gradient(90deg, transparent, oklch(0.78 0.18 160 / 22%), transparent); opacity: 0; }
+.scan-surface.is-scanning::after { opacity: 1; animation: scan-sweep 1.35s ease-in-out infinite; }
+@keyframes scan-sweep { from { transform: translateX(0); } to { transform: translateX(480%); } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
