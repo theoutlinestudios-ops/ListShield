@@ -19,7 +19,7 @@ const mockEtsyListings = [
 ]
 
 export default function Page() {
-  const [view, setView] = useState('overview'), [modal, setModal] = useState(false), [connected, setConnected] = useState(false), [theme, setTheme] = useState<'light'|'dark'|'system'>('system')
+  const [view, setView] = useState('audit'), [modal, setModal] = useState(false), [connected, setConnected] = useState(false), [theme, setTheme] = useState<'light'|'dark'|'system'>('system')
   const [title, setTitle] = useState('Personalized Onesie for Newborn'), [description, setDescription] = useState('A cozy, personalized Disney-inspired onesie for your little one. Made from soft cotton and perfect for baby showers.'), [tags, setTags] = useState('newborn, onesie, baby gift, disney, personalized')
   const [scanning, setScanning] = useState(false), [scanned, setScanned] = useState(true), [fixed, setFixed] = useState(false), [open, setOpen] = useState<string|null>('critical')
   useEffect(() => { const root = document.documentElement; const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches); root.classList.toggle('dark', dark); root.style.colorScheme = dark ? 'dark' : 'light'; if (theme === 'system') { const media = matchMedia('(prefers-color-scheme: dark)'), fn = () => root.classList.toggle('dark', media.matches); media.addEventListener('change', fn); return () => media.removeEventListener('change', fn) } }, [theme])
