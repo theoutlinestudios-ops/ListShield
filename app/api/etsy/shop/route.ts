@@ -1,0 +1,49 @@
+import { NextResponse } from 'next/server'
+
+const ETSY_API = 'https://openapi.etsy.com/v3/application'
+
+type EtsyListing = {
+  listing_id: number
+  title: string
+  price?: { amount: number; divisor: number; currency_code: string }
+  state?: string
+}
+
+function priceOf(listing: EtsyListing) {
+  return listing.price ? listing.price.amount / listing.price.divisor : 0
+}
+
+async function etsyFetch<T>(path: string) {
+  const token = process.env.ETSY_ACCESS_TOKEN
+  const key = process.env.ETSY_API_KEY
+  if (!token || !key) throw new Error('Etsy credentials are not configured.')
+  const response = await fetch(`${ETSY_API}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': key },
+    cache: 'no-store',
+  })
+  if (!response.ok) throw new Error(`Etsy API returned ${response.status}.`)
+  return response.json() as Promise<T>
+}
+
+export async function GET() {
+  try {
+    const user = await etsyFetch<{ user_id: number }>('/users/me')
+    const shop = await etsyFetch<{ shop_id: number; shop_name: string }>(`/users/${user.user_id}/shops`)
+    const [active, drafts] = await Promise.all([
+      etsyFetch<{ results: EtsyListing[] }>(`/shops/${shop.shop_id}/listings/active?limit=100`),
+      etsyFetch<{ results: EtsyListing[] }>(`/shops/${shop.shop_id}/listings/drafts?limit=100`),
+    ])
+    const listings = active.results ?? []
+    const flagged = listings.filter((listing) => /disney|nike|pokemon|marvel|harry potter|star wars/i.test(listing.title)).length
+    return NextResponse.json({
+      name: shop.shop_name,
+      published: listings.length,
+      drafts: drafts.results?.length ?? 0,
+      catalogValue: listings.reduce((total, listing) => total + priceOf(listing), 0),
+      flagged,
+      listings: listings.slice(0, 12).map((listing) => ({ name: listing.title, status: /disney|nike|pokemon|marvel|harry potter|star wars/i.test(listing.title) ? 'IP warning' : 'Secure', price: priceOf(listing) })),
+    }, { headers: { 'Cache-Control': 'private, no-store' } })
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to load Etsy shop.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } })
+  }
+}
