@@ -110,7 +110,7 @@ button { cursor: pointer; }
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 .glass-panel:hover { transform: translateY(-2px); box-shadow: 0 22px 55px oklch(0.24 0.04 160 / 13%), var(--panel-shadow); }
-.glass-sidebar { background: color-mix(in oklch, var(--sidebar) 78%, transparent); backdrop-filter: blur(22px); }
+.glass-sidebar { background: var(--background); backdrop-filter: blur(22px); }
 .premium-button { background: linear-gradient(135deg, oklch(0.68 0.18 160), oklch(0.48 0.15 155)); box-shadow: 0 10px 22px oklch(0.5 0.16 160 / 22%), inset 0 1px oklch(1 0 0 / 24%); transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease; }
 .premium-button:hover { transform: translateY(-2px); filter: saturate(1.12); box-shadow: 0 15px 30px oklch(0.5 0.16 160 / 32%), inset 0 1px oklch(1 0 0 / 28%); }
 .premium-button:active { transform: translateY(0); }
