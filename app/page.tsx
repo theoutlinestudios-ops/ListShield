@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle, ArrowRight, BarChart3, Check, ChevronDown, ChevronRight, CircleHelp,
   ClipboardCheck, Clock3, Crown, FileCheck2, Gauge, LayoutDashboard, ListChecks,
   LockKeyhole, Menu, MonitorCheck, MoreHorizontal, Plus, ScanSearch, ShieldCheck,
-  Sparkles, Store, Tag, TrendingUp, X, Zap,
+  Sparkles, Store, Sun, Moon, Tag, TrendingUp, X, Zap, Monitor,
 } from 'lucide-react'
+
+const themeOptions = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'Device', icon: Monitor },
+] as const
 
 const navItems = [
   { label: 'Overview', icon: LayoutDashboard, view: 'overview' },
@@ -30,6 +36,27 @@ export default function Page() {
   const [fixed, setFixed] = useState(false)
   const [open, setOpen] = useState<string | null>('critical')
   const [modal, setModal] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
+
+  useEffect(() => {
+    const root = document.documentElement
+    const applyTheme = (nextTheme: typeof theme) => {
+      const isDark = nextTheme === 'dark' || (nextTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      root.classList.toggle('dark', isDark)
+      root.style.colorScheme = isDark ? 'dark' : 'light'
+    }
+    applyTheme(theme)
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)')
+      const handleChange = () => applyTheme('system')
+      media.addEventListener('change', handleChange)
+      return () => media.removeEventListener('change', handleChange)
+    }
+  }, [theme])
+
+  function changeTheme(nextTheme: typeof theme) {
+    setTheme(nextTheme)
+  }
 
   function scan() {
     setScanning(true); setScanned(false); setFixed(false)
@@ -70,7 +97,7 @@ export default function Page() {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="flex h-[72px] items-center justify-between border-b border-border px-5 sm:px-8"><div className="flex items-center gap-3"><button className="lg:hidden"><Menu className="size-5" /></button><div><p className="text-xs text-muted-foreground">Northstar Studio / Workspace</p><h1 className="text-sm font-semibold tracking-tight">{view === 'monitoring' ? 'Monitoring' : view === 'overview' ? 'Overview' : 'Listing audit'}</h1></div></div><div className="flex items-center gap-3"><span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex"><span className="size-1.5 rounded-full bg-emerald-500" />All systems operational</span><button onClick={() => setModal(true)} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted"><Plus className="size-3.5" /> New scan</button></div></header>
+          <header className="flex h-[72px] items-center justify-between border-b border-border px-5 sm:px-8"><div className="flex items-center gap-3"><button className="lg:hidden"><Menu className="size-5" /></button><div><p className="text-xs text-muted-foreground">Northstar Studio / Workspace</p><h1 className="text-sm font-semibold tracking-tight">{view === 'monitoring' ? 'Monitoring' : view === 'overview' ? 'Overview' : 'Listing audit'}</h1></div></div><div className="flex items-center gap-3"><span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex"><span className="size-1.5 rounded-full bg-emerald-500" />All systems operational</span><div className="hidden items-center gap-1 rounded-md border border-border bg-card p-1 sm:flex" aria-label="Theme preference">{themeOptions.map((option) => { const Icon = option.icon; return <button key={option.value} onClick={() => changeTheme(option.value)} aria-label={`${option.label} theme`} aria-pressed={theme === option.value} className={`flex size-7 items-center justify-center rounded transition-colors ${theme === option.value ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}><Icon className="size-3.5" /></button> })}</div><button onClick={() => setModal(true)} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted"><Plus className="size-3.5" /> New scan</button></div></header>
           <div className="mx-auto max-w-[1320px] p-5 sm:p-8">
             {view === 'monitoring' ? <MonitoringView onUpgrade={() => setModal(true)} /> : view === 'overview' ? <OverviewView onAudit={() => setView('audit')} /> : <AuditView {...{title, setTitle, description, setDescription, tags, setTags, scanning, scanned, scan, fixed, fixListing, open, setOpen}} />}
           </div>
