@@ -56,6 +56,9 @@
   --sidebar-foreground: oklch(0.24 0.025 255);
   --sidebar-accent: oklch(0.9 0.018 255);
   --sidebar-border: oklch(0.19 0.025 255 / 10%);
+  --panel: oklch(1 0 0 / 78%);
+  --panel-border: oklch(0.19 0.025 255 / 10%);
+  --panel-shadow: 0 18px 50px oklch(0.24 0.04 160 / 9%), inset 0 1px oklch(1 0 0 / 80%);
   --radius: 0.625rem;
 }
 
@@ -82,12 +85,15 @@
   --sidebar-foreground: oklch(0.92 0.01 255);
   --sidebar-accent: oklch(0.23 0.028 255);
   --sidebar-border: oklch(1 0 0 / 9%);
+  --panel: oklch(0.19 0.012 260 / 42%);
+  --panel-border: oklch(1 0 0 / 9%);
+  --panel-shadow: 0 18px 60px oklch(0 0 0 / 18%), inset 0 1px oklch(1 0 0 / 5%);
   --radius: 0.625rem;
 }
 
 * { @apply border-border outline-ring/50; }
 html { background: var(--background); }
-body { @apply bg-background text-foreground antialiased; }
+body { @apply bg-background text-foreground antialiased; background: radial-gradient(circle at 8% 0%, oklch(0.82 0.12 160 / 12%), transparent 32rem), radial-gradient(circle at 94% 18%, oklch(0.8 0.1 160 / 9%), transparent 28rem), var(--background); }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 ::selection { background: oklch(0.72 0.17 160 / 30%); }
@@ -97,13 +103,18 @@ button { cursor: pointer; }
 }
 
 .glass-panel {
-  background: oklch(0.19 0.012 260 / 42%);
-  border-color: oklch(1 0 0 / 9%);
-  box-shadow: 0 18px 60px oklch(0 0 0 / 18%), inset 0 1px oklch(1 0 0 / 5%);
+  background: var(--panel);
+  border-color: var(--panel-border);
+  box-shadow: var(--panel-shadow);
   backdrop-filter: blur(18px);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
+.glass-panel:hover { transform: translateY(-2px); box-shadow: 0 22px 55px oklch(0.24 0.04 160 / 13%), var(--panel-shadow); }
+.glass-sidebar { background: color-mix(in oklch, var(--sidebar) 78%, transparent); backdrop-filter: blur(22px); }
+.premium-button { background: linear-gradient(135deg, oklch(0.68 0.18 160), oklch(0.48 0.15 155)); box-shadow: 0 10px 22px oklch(0.5 0.16 160 / 22%), inset 0 1px oklch(1 0 0 / 24%); transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease; }
+.premium-button:hover { transform: translateY(-2px); filter: saturate(1.12); box-shadow: 0 15px 30px oklch(0.5 0.16 160 / 32%), inset 0 1px oklch(1 0 0 / 28%); }
+.premium-button:active { transform: translateY(0); }
 
-.glass-sidebar { background: oklch(0.13 0.012 260 / 64%); backdrop-filter: blur(22px); }
 .scan-surface { position: relative; overflow: hidden; }
 .scan-surface::after { content: ''; position: absolute; inset: 0 auto 0 -35%; width: 28%; pointer-events: none; background: linear-gradient(90deg, transparent, oklch(0.78 0.18 160 / 22%), transparent); opacity: 0; }
 .scan-surface.is-scanning::after { opacity: 1; animation: scan-sweep 1.35s ease-in-out infinite; }
