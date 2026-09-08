@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const ETSY_API = 'https://openapi.etsy.com/v3/application'
