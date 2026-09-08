@@ -12,8 +12,7 @@ export async function GET(request: Request) {
   const state = randomBytes(24).toString('base64url')
   const verifier = randomBytes(48).toString('base64url')
   const challenge = createHash('sha256').update(verifier).digest('base64url')
-  const origin = new URL(request.url).origin
-  const redirectUri = `${origin}/api/etsy/oauth/callback`
+  const redirectUri = 'https://v0-list-shield.vercel.app/api/etsy/oauth/callback'
   const authorizationUrl = new URL('https://www.etsy.com/oauth/connect')
   authorizationUrl.search = new URLSearchParams({ response_type: 'code', client_id: apiKey, redirect_uri: redirectUri, scope: 'listings_r', state, code_challenge: challenge, code_challenge_method: 'S256' }).toString()
 

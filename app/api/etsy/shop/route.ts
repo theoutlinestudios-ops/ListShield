@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 
 const ETSY_API = 'https://openapi.etsy.com/v3/application'
 
+async function getSessionTokens() {
+  const jar = await cookies()
+  return {
+    access: jar.get('listshield-etsy-access')?.value || process.env.ETSY_ACCESS_TOKEN,
+    refresh: jar.get('listshield-etsy-refresh')?.value || process.env.ETSY_REFRESH_TOKEN,
+  }
+}
+
 type EtsyListing = {
   listing_id: number
   title: string
@@ -13,14 +21,40 @@ function priceOf(listing: EtsyListing) {
   return listing.price ? listing.price.amount / listing.price.divisor : 0
 }
 
-async function etsyFetch<T>(path: string) {
-  const token = process.env.ETSY_ACCESS_TOKEN
+let accessToken = process.env.ETSY_ACCESS_TOKEN
+
+async function refreshAccessToken() {
   const key = process.env.ETSY_API_KEY
+  const { refresh: refreshToken } = await getSessionTokens()
+  if (!key || !refreshToken) throw new Error('Etsy credentials are not configured.')
+
+  const response = await fetch('https://api.etsy.com/v3/public/oauth/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: key, refresh_token: refreshToken }),
+    cache: 'no-store',
+  })
+  if (!response.ok) throw new Error(`Etsy token refresh returned ${response.status}.`)
+  const payload = await response.json() as { access_token?: string }
+  if (!payload.access_token) throw new Error('Etsy token refresh returned no access token.')
+  accessToken = payload.access_token
+  const jar = await cookies()
+  jar.set('listshield-etsy-access', accessToken, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
+}
+
+async function etsyFetch<T>(path: string, retried = false): Promise<T> {
+  const key = process.env.ETSY_API_KEY
+  const sessionTokens = await getSessionTokens()
+  const token = sessionTokens.access || accessToken
   if (!token || !key) throw new Error('Etsy credentials are not configured.')
   const response = await fetch(`${ETSY_API}${path}`, {
     headers: { Authorization: `Bearer ${token}`, 'x-api-key': key },
     cache: 'no-store',
   })
+  if (response.status === 401 && !retried) {
+    await refreshAccessToken()
+    return etsyFetch<T>(path, true)
+  }
   if (!response.ok) throw new Error(`Etsy API returned ${response.status}.`)
   return response.json() as Promise<T>
 }
