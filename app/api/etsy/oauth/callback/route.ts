@@ -1,33 +1,17 @@
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-
-function clearCookies(response: NextResponse) {
-  response.cookies.set('etsy_oauth_state', '', { maxAge: 0, path: '/' })
-  response.cookies.set('etsy_oauth_verifier', '', { maxAge: 0, path: '/' })
-}
+import { headers } from 'next/headers'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { etsyConnection } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
+import { randomUUID } from 'crypto'
 
 export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const code = url.searchParams.get('code')
-  const returnedState = url.searchParams.get('state')
-  const providerError = url.searchParams.get('error')
-  const jar = await cookies()
-  const expectedState = jar.get('etsy_oauth_state')?.value
-  const verifier = jar.get('etsy_oauth_verifier')?.value
-  if (providerError) return NextResponse.redirect(new URL(`/?etsy=error&reason=${encodeURIComponent(providerError)}`, 'https://v0-list-shield.vercel.app'))
-  if (!code || !returnedState || !expectedState || returnedState !== expectedState || !verifier) return NextResponse.redirect(new URL('/?etsy=error&reason=invalid_request', 'https://v0-list-shield.vercel.app'))
-
-  const apiKey = process.env.ETSY_API_KEY
-  const sharedSecret = process.env.ETSY_SHARED_SECRET
-  if (!apiKey || !sharedSecret) return NextResponse.redirect(new URL('/?etsy=error&reason=missing_server_config', 'https://v0-list-shield.vercel.app'))
-  const redirectUri = 'https://v0-list-shield.vercel.app/api/etsy/oauth/callback'
-  const tokenResponse = await fetch('https://api.etsy.com/v3/public/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: apiKey, redirect_uri: redirectUri, code, code_verifier: verifier }).toString(), cache: 'no-store' })
-  if (!tokenResponse.ok) return NextResponse.redirect(new URL('/?etsy=error&reason=token_exchange_failed', 'https://v0-list-shield.vercel.app'))
-  const token = await tokenResponse.json() as { access_token?: string; refresh_token?: string }
-  if (!token.access_token || !token.refresh_token) return NextResponse.redirect(new URL('/?etsy=error&reason=token_exchange_failed', 'https://v0-list-shield.vercel.app'))
-  const result = NextResponse.redirect(new URL('/?etsy=connected&view=shop', 'https://v0-list-shield.vercel.app'))
-  result.cookies.set('listshield-etsy-access', token.access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
-  result.cookies.set('listshield-etsy-refresh', token.refresh_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 90 })
-  clearCookies(result)
-  return result
+  const session = await auth.api.getSession({ headers: await headers() }); const url = new URL(request.url); const jar = await import('next/headers').then((m) => m.cookies()); const state = jar.get('etsy_oauth_state')?.value; const verifier = jar.get('etsy_oauth_verifier')?.value
+  if (!session?.user || !state || state !== url.searchParams.get('state') || !verifier) return NextResponse.redirect(new URL('/?etsy=error&reason=invalid_oauth', url.origin))
+  const redirectUri = `${process.env.BETTER_AUTH_URL || url.origin}/api/etsy/oauth/callback`
+  const result = await fetch('https://api.etsy.com/v3/public/oauth/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: process.env.ETSY_API_KEY || '', redirect_uri: redirectUri, code: url.searchParams.get('code') || '', code_verifier: verifier }) })
+  if (!result.ok) return NextResponse.redirect(new URL('/?etsy=error&reason=token_exchange_failed', url.origin))
+  const token = await result.json(); await db.insert(etsyConnection).values({ id: randomUUID(), userId: session.user.id, accessToken: token.access_token, refreshToken: token.refresh_token, expiresAt: new Date(Date.now() + token.expires_in * 1000) }).onConflictDoUpdate({ target: etsyConnection.userId, set: { accessToken: token.access_token, refreshToken: token.refresh_token, expiresAt: new Date(Date.now() + token.expires_in * 1000), updatedAt: new Date() } })
+  const response = NextResponse.redirect(new URL('/?view=shop&etsy=connected', url.origin)); response.cookies.delete('etsy_oauth_state'); response.cookies.delete('etsy_oauth_verifier'); return response
 }
