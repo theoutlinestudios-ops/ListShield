@@ -56,7 +56,10 @@ async function etsyFetch<T>(path: string, retried = false): Promise<T> {
     await refreshAccessToken()
     return etsyFetch<T>(path, true)
   }
-  if (!response.ok) throw new Error(`Etsy API returned ${response.status}.`)
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    throw new Error(`Etsy API returned ${response.status} for ${path}.${detail ? ` ${detail.slice(0, 180)}` : ''}`)
+  }
   return response.json() as Promise<T>
 }
 
@@ -66,7 +69,7 @@ export async function GET() {
     const shop = await etsyFetch<{ shop_id: number; shop_name: string }>(`/users/${user.user_id}/shops`)
     const [active, drafts] = await Promise.all([
       etsyFetch<{ results: EtsyListing[] }>(`/shops/${shop.shop_id}/listings/active?limit=100`),
-      etsyFetch<{ results: EtsyListing[] }>(`/shops/${shop.shop_id}/listings/drafts?limit=100`),
+      etsyFetch<{ results: EtsyListing[] }>(`/shops/${shop.shop_id}/listings/draft?limit=100`),
     ])
     const listings = active.results ?? []
     const flagged = listings.filter((listing) => /disney|nike|pokemon|marvel|harry potter|star wars/i.test(listing.title)).length
