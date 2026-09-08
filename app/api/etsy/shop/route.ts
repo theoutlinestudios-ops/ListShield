@@ -49,7 +49,7 @@ async function etsyFetch<T>(path: string, retried = false): Promise<T> {
   const token = sessionTokens.access || accessToken
   if (!token || !key) throw new Error('Etsy credentials are not configured.')
   const response = await fetch(`${ETSY_API}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, 'x-api-key': key },
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': `${key}:${process.env.ETSY_SHARED_SECRET}` },
     cache: 'no-store',
   })
   if (response.status === 401 && !retried) {
