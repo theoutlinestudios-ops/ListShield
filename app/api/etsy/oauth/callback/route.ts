@@ -22,8 +22,11 @@ export async function GET(request: Request) {
   if (!apiKey || !sharedSecret) return NextResponse.redirect(new URL('/etsy/oauth-result?error=missing_server_config', url.origin))
   const tokenResponse = await fetch('https://api.etsy.com/v3/public/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: apiKey, redirect_uri: `${url.origin}/api/etsy/oauth/callback`, code, code_verifier: verifier }).toString(), cache: 'no-store' })
   if (!tokenResponse.ok) return NextResponse.redirect(new URL('/etsy/oauth-result?error=token_exchange_failed', url.origin))
-  const token = await tokenResponse.json() as { access_token: string; refresh_token: string; expires_in: number; token_type: string }
-  const result = new NextResponse(null, { status: 302, headers: { Location: `/etsy/oauth-result?access_token=${encodeURIComponent(token.access_token)}&refresh_token=${encodeURIComponent(token.refresh_token)}&expires_in=${token.expires_in}&token_type=${encodeURIComponent(token.token_type)}`, 'Cache-Control': 'no-store' } })
+  const token = await tokenResponse.json() as { access_token?: string; refresh_token?: string }
+  if (!token.access_token || !token.refresh_token) return NextResponse.redirect(new URL('/etsy/oauth-result?error=token_exchange_failed', url.origin))
+  const result = NextResponse.redirect(new URL('/?etsy=connected&view=shop', url.origin))
+  result.cookies.set('listshield-etsy-access', token.access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
+  result.cookies.set('listshield-etsy-refresh', token.refresh_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 90 })
   clearCookies(result)
   return result
 }
